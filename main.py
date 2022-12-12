@@ -114,123 +114,136 @@ def index_blueprint(blueprint_data):
         "circuits": 0
     }
     
-    for child in blueprint_data:
-        
-        # Test if a specific child object is a logic block
-        if child.keys() == block_obj.keys():
-            for key in child.keys():
-                if type(child[key]) != block_obj[key]:
-                    break
-            
-            # Vanilla type
-            if child["controller"].keys() == vanilla_controller.keys():
-                for key in child["controller"].keys():
-                    # Ignore if any
-                    if vanilla_controller[key] == any:
-                        continue
-                    
-                    # Verify datatype
-                    if type(child["controller"][key]) not in [type(vanilla_controller[key]), vanilla_controller[key]]:
-                        print(f"Datatype missmatch found while testing for a vanilla block at index {index}. \n key {key} in {child['controller']}\n Expected: {type(vanilla_controller[key])} or {vanilla_controller[key]}, got: {type(child['controller'][key])}")
-                        exit()
-                
-                for key in vanilla_modes.keys():
-                    if vanilla_modes[key] == child["controller"]["mode"]:
-                        index_data.append({
-                            "index": index,
-                            "type": "vanilla",
-                            "mode": key
-                        })
+    for body_index in range(len(blueprint_data["bodies"])):
+        # Reset index counter for each new child iteration
+        index = 0
+        for child in blueprint_data["bodies"][body_index]["childs"]:
+            # Test if a specific child object is a logic block
+            if child.keys() == block_obj.keys():
+                for key in child.keys():
+                    if type(child[key]) != block_obj[key]:
                         break
-                index_count["vanilla"] += 1
-            
-            # Modded type
-            if child["controller"].keys() == non_vanilla_controller.keys():
-                for key in child["controller"].keys():
-                    # Ignore if any
-                    if non_vanilla_controller[key] == any:
-                        continue
+                
+                # Vanilla type
+                if child["controller"].keys() == vanilla_controller.keys():
+                    for key in child["controller"].keys():
+                        # Ignore if any
+                        if vanilla_controller[key] == any:
+                            continue
+                        
+                        # Verify datatype
+                        if type(child["controller"][key]) not in [type(vanilla_controller[key]), vanilla_controller[key]]:
+                            print(f"Datatype missmatch found while testing for a vanilla block at index {index}. \n key {key} in {child['controller']}\n Expected: {type(vanilla_controller[key])} or {vanilla_controller[key]}, got: {type(child['controller'][key])}")
+                            exit()
                     
-                    # Verify datatype
-                    if type(child["controller"][key]) not in [type(non_vanilla_controller[key]), non_vanilla_controller[key]]:
-                        print(f"Datatype missmatch found while testing for a modded block at index {index}. \n key {key} in {child['controller']}\n Expected: {type(non_vanilla_controller[key])} or {non_vanilla_controller[key]}, got: {type(child['controller'][key])}")
-                        exit()
-                
-                # Determine what specific type of modded block
-                
-                # Vincling type
-                if child["controller"]["data"] in vincling_data.values():
-                    for key in vincling_data.keys():
-                        if vincling_data[key] == child["controller"]["data"]:
+                    for key in vanilla_modes.keys():
+                        if vanilla_modes[key] == child["controller"]["mode"]:
                             index_data.append({
                                 "index": index,
-                                "type": "vincling",
+                                "body_index": body_index,
+                                "type": "vanilla",
                                 "mode": key
                             })
                             break
-                    index_count["vincling"] += 1
+                    index_count["vanilla"] += 1
+                
+                # Modded type
+                if child["controller"].keys() == non_vanilla_controller.keys():
+                    for key in child["controller"].keys():
+                        # Ignore if any
+                        if non_vanilla_controller[key] == any:
+                            continue
+                        
+                        # Verify datatype
+                        if type(child["controller"][key]) not in [type(non_vanilla_controller[key]), non_vanilla_controller[key]]:
+                            print(f"Datatype missmatch found while testing for a modded block at index {index}. \n key {key} in {child['controller']}\n Expected: {type(non_vanilla_controller[key])} or {non_vanilla_controller[key]}, got: {type(child['controller'][key])}")
+                            exit()
                     
-                # Circuits type
-                if child["controller"]["data"] in circuits_data.values():
-                    for key in circuits_data.keys():
-                        if circuits_data[key] == child["controller"]["data"]:
-                            index_data.append({
-                                "index": index,
-                                "type": "circuits",
-                                "mode": key
-                            })
-                            break
-                    index_count["circuits"] += 1
-        index += 1
+                    # Determine what specific type of modded block
+                    
+                    # Vincling type
+                    if child["controller"]["data"] in vincling_data.values():
+                        for key in vincling_data.keys():
+                            if vincling_data[key] == child["controller"]["data"]:
+                                index_data.append({
+                                    "index": index,
+                                    "body_index": body_index,
+                                    "type": "vincling",
+                                    "mode": key
+                                })
+                                break
+                        index_count["vincling"] += 1
+                    
+                    # Circuits type
+                    if child["controller"]["data"] in circuits_data.values():
+                        for key in circuits_data.keys():
+                            if circuits_data[key] == child["controller"]["data"]:
+                                index_data.append({
+                                    "index": index,
+                                    "body_index": body_index,
+                                    "type": "circuits",
+                                    "mode": key
+                                })
+                                break
+                        index_count["circuits"] += 1
+            index += 1
     return index_data, index_count
 
 def convert_vanilla(index, blueprint_data_full, blueprint_data):
-    for x in index:
+    for child_selection in index:
         # Do not modify if already vanilla
-        if x["type"] == "vanilla":
+        if child_selection["type"] == "vanilla":
             continue
         
-        # Backup the controller data
-        controller = copy(blueprint_data[x["index"]]["controller"])
+        # Simplify
+        child = blueprint_data["bodies"][child_selection["body_index"]]["childs"][child_selection["index"]]
+        
+        if "controller" in child:
+            # Backup the controller data
+            controller = copy(child["controller"])
         
         # Change the shape ID to vanilla
-        blueprint_data[x["index"]]["shapeId"] = shapeids["vanilla"]
+        child["shapeId"] = shapeids["vanilla"]
         
         # Convert the block mode
-        blueprint_data[x["index"]]["controller"] = {
+        child["controller"] = {
             "active": False,
             "controllers": controller["controllers"],
             "id": controller["id"],
             "joints": controller["joints"],
-            "mode": vanilla_modes[x["mode"]]
+            "mode": vanilla_modes[child_selection["mode"]]
         }
-        
-    # Store the updated JSON but do not modify dependencies
-    blueprint_data_full["bodies"][0]["childs"] = blueprint_data
+    
+    # Save blueprint but do not modify dependencies
+    blueprint_data_full = blueprint_data
 
 def convert_vincling(index, blueprint_data_full, blueprint_data):
-    for x in index:
+    for child_selection in index:
         # Do not modify if already vincling
-        if x["type"] == "vincling":
+        if child_selection["type"] == "vincling":
             continue
-            
-        # Backup the controller data
-        controller = copy(blueprint_data[x["index"]]["controller"])
+        
+        # Simplify
+        child = blueprint_data["bodies"][child_selection["body_index"]]["childs"][child_selection["index"]]
+        
+        if "controller" in child:
+            # Backup the controller data
+            controller = copy(child["controller"])
         
         # Change the shape ID to vincling
-        blueprint_data[x["index"]]["shapeId"] = shapeids["vincling"]
+        child["shapeId"] = shapeids["vincling"]
         
         # Convert the block
-        blueprint_data[x["index"]]["controller"] = {
+        child["controller"] = {
             "containers": None,
             "controllers": controller["controllers"],
-            "data": vincling_data[x["mode"]],
+            "data": vincling_data[child_selection["mode"]],
             "id": controller["id"],
             "joints": controller["joints"]
         }
     
-    # Store the updated JSON
-    blueprint_data_full["bodies"][0]["childs"] = blueprint_data
+    # Save blueprint
+    blueprint_data_full = blueprint_data
     
     # Update file dependencies
     if "dependencies" in blueprint_data_full:
@@ -243,28 +256,31 @@ def convert_vincling(index, blueprint_data_full, blueprint_data):
         ]
 
 def convert_circuits(index, blueprint_data_full, blueprint_data):
-    for x in index:
+    for child_selection in index:
         # Do not modify if already circuits
-        if x["type"] == "circuits":
+        if child_selection["type"] == "circuits":
             continue
         
-        # Backup the controller data
-        controller = copy(blueprint_data[x["index"]]["controller"])
+        # Simplify
+        child = blueprint_data["bodies"][child_selection["body_index"]]["childs"][child_selection["index"]]
+        
+        if "controller" in child:
+            # Backup the controller data
+            controller = copy(child["controller"])
         
         # Change the shape ID to circuits
-        blueprint_data[x["index"]]["shapeId"] = shapeids["circuits"]
+        child["shapeId"] = shapeids["circuits"]
         
         # Convert the block
-        blueprint_data[x["index"]]["controller"] = {
+        child["controller"] = {
             "containers": None,
             "controllers": controller["controllers"],
-            "data": circuits_data[x["mode"]],
+            "data": circuits_data[child_selection["mode"]],
             "id": controller["id"],
             "joints": controller["joints"]
         }
     
-    # Store the updated JSON
-    blueprint_data_full["bodies"][0]["childs"] = blueprint_data
+    blueprint_data_full = blueprint_data
     
     # Update file dependencies
     if "dependencies" in blueprint_data_full:
@@ -294,15 +310,15 @@ if __name__ == "__main__":
             print("Not a Scrap Mechanic blueprint file!")
             exit()
     
-    # Only read required data
+    # Make a backup
     blueprint_json_full = copy(blueprint_json)
-    blueprint_json = blueprint_json["bodies"][0]["childs"]
     
     # Index all exisitng logic blocks in the file, and verify integrity
     print("Indexing and verifying blueprint structure and data...")
     index, counts = index_blueprint(blueprint_json)
     print(f"Found {counts['vanilla']} Vanilla blocks, {counts['vincling']} Vincling blocks, and {counts['circuits']} Circuits blocks.")
     
+    # Menu
     print("=== Convert Menu ===\nPlease enter the menu number to convert all blocks into.\n1. Vanilla\n2. Vincling\n3. Circuits\n4. Abort")
     match int(input("> ")):
         case 1:
