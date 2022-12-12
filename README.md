@@ -5,6 +5,6 @@ As of now, this only works on Windows.
 Requires Python >=3.10.
 
 ## Notes
-1. This conversion script is janky. I would suggest backing up your blueprints before using this script.
-2. Convert chunks of a blueprint at a time. Converting an entire blueprint may lead to unpredictable/undesirable results.
-3. When converting blueprints to Vincling's mod, set the speed multiplier to x1 or single-step before spawning a blueprint.
+1. Make backups of your blueprints - This script could corrupt your blueprint or break it!
+2. It is possible to convert very large blueprints, but I would suggest converting chunks of a blueprint at a time. Converting an entire blueprint may lead to unpredictable/undesirable results.
+3. When converting blueprints to Vincling's mod, set the speed multiplier to x1 or single-step before spawning a blueprint. Circuits may cause the game to lag  if not properly optimized.
